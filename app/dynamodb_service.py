@@ -115,6 +115,32 @@ class DynamoDBService:
         except Exception as e:
             print(f"Error setting last selected device: {e}")
 
+    def set_device_stream(self, device_identifier: str, stream_url: str):
+        """Set the currently playing stream URL for a device."""
+        try:
+            self.state_table.put_item(Item={
+                'key': f'device_stream_{device_identifier}',
+                'value': stream_url
+            })
+        except Exception as e:
+            print(f"Error setting device stream: {e}")
+
+    def get_device_stream(self, device_identifier: str) -> Optional[str]:
+        """Get the currently playing stream URL for a device."""
+        try:
+            response = self.state_table.get_item(Key={'key': f'device_stream_{device_identifier}'})
+            return response.get('Item', {}).get('value')
+        except Exception as e:
+            print(f"Error getting device stream: {e}")
+            return None
+
+    def clear_device_stream(self, device_identifier: str):
+        """Clear the currently playing stream URL for a device."""
+        try:
+            self.state_table.delete_item(Key={'key': f'device_stream_{device_identifier}'})
+        except Exception as e:
+            print(f"Error clearing device stream: {e}")
+
     # Station management
     def get_all_stations(self) -> List[Dict]:
         """Get all radio stations."""

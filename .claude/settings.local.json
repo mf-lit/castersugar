@@ -6,7 +6,9 @@
       "Bash(python:*)",
       "Bash(lsof:*)",
       "Bash(xargs kill:*)",
-      "Bash(uv run python:*)"
+      "Bash(uv run python:*)",
+      "Bash(python3:*)",
+      "Bash(timeout 15 uv run:*)"
     ],
     "deny": [],
     "ask": []

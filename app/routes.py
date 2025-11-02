@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, jsonify, request
 from app.chromecast_service import chromecast_service
 from app.dynamodb_service import dynamodb_service
+from app.icy_metadata_service import icy_metadata_service
 import uuid as uuid_lib
 
 bp = Blueprint('main', __name__)
@@ -201,18 +202,29 @@ def api_radio_play():
         station_url = data['url']
         station_name = data.get('name', 'Radio')
 
+        print(f"[RADIO PLAY] Device: {device_identifier}, URL: {station_url}, Name: {station_name}")
+
         # Resolve device identifier to UUID
         uuid = resolve_device_identifier(device_identifier)
+        print(f"[RADIO PLAY] Resolved UUID: {uuid}")
 
         # Play the URL
         result = chromecast_service.play_url(uuid, station_url, title=station_name)
+        print(f"[RADIO PLAY] Play result: {result}")
 
         # Save last selected device if successful
         if result.get('success'):
+            print(f"[RADIO PLAY] Saving device stream: UUID {uuid} -> {station_url}")
             dynamodb_service.set_last_selected_device(device_identifier)
+            # Track which stream is playing on this device (use UUID as key)
+            dynamodb_service.set_device_stream(uuid, station_url)
+            # Start monitoring ICY metadata
+            print(f"[RADIO PLAY] Starting ICY metadata monitoring for: {station_url}")
+            icy_metadata_service.start_monitoring(station_url)
 
         return jsonify(result)
     except Exception as e:
+        print(f"[RADIO PLAY] Error: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
@@ -223,6 +235,13 @@ def api_radio_stop():
         data = request.get_json()
         device_identifier = data['device']
         uuid = resolve_device_identifier(device_identifier)
+
+        # Get the stream URL that was playing and stop monitoring it (use UUID as key)
+        stream_url = dynamodb_service.get_device_stream(uuid)
+        if stream_url:
+            icy_metadata_service.stop_monitoring(stream_url)
+            dynamodb_service.clear_device_stream(uuid)
+
         return jsonify(chromecast_service.stop(uuid))
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
@@ -252,4 +271,38 @@ def api_cache_logo():
         result = dynamodb_service.cache_logo(url, force_refresh=force_refresh)
         return jsonify(result)
     except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@bp.route('/api/device/<identifier>/icy-metadata')
+def api_icy_metadata(identifier):
+    """Get ICY metadata for currently playing stream on a device."""
+    try:
+        print(f"[ICY METADATA] Requested for device: {identifier}")
+
+        # Resolve identifier to UUID
+        uuid = resolve_device_identifier(identifier)
+        print(f"[ICY METADATA] Resolved UUID: {uuid}")
+
+        # Get the stream URL that's playing on this device (use UUID as key)
+        stream_url = dynamodb_service.get_device_stream(uuid)
+        print(f"[ICY METADATA] Stream URL for device: {stream_url}")
+
+        if not stream_url:
+            return jsonify({'success': False, 'error': 'No stream playing on device'})
+
+        # Get cached metadata
+        metadata = icy_metadata_service.get_metadata(stream_url)
+        print(f"[ICY METADATA] Cached metadata: {metadata}")
+
+        if metadata:
+            return jsonify({
+                'success': True,
+                'metadata': metadata
+            })
+        else:
+            return jsonify({'success': False, 'error': 'No metadata available yet'})
+
+    except Exception as e:
+        print(f"[ICY METADATA] Error: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500

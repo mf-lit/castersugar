@@ -165,6 +165,7 @@ class ChromecastService:
                 'volume_level': cast.status.volume_level,
                 'volume_muted': cast.status.volume_muted,
                 'is_idle': cast.is_idle,
+                'status_text': cast.status.status_text if hasattr(cast.status, 'status_text') else None,
                 'media_status': {
                     'state': status.player_state if status else 'UNKNOWN',
                     'title': status.title if status else None,

@@ -1,6 +1,8 @@
 document.addEventListener('DOMContentLoaded', function() {
     let currentStatus = null;
     let statusInterval = null;
+    let icyMetadataInterval = null;
+    let cachedICYMetadata = null;  // Cache ICY metadata to avoid flickering
 
     const elements = {
         loadingStatus: document.getElementById('loading-status'),
@@ -84,9 +86,22 @@ document.addEventListener('DOMContentLoaded', function() {
         const media = status.media_status;
         if (media && media.state !== 'UNKNOWN' && media.state !== 'IDLE') {
             // Update track info
-            elements.trackTitle.textContent = media.title || 'Unknown Title';
-            elements.trackArtist.textContent = media.artist || '';
-            elements.trackAlbum.textContent = media.album_name || '';
+            // Prefer ICY metadata if available (for radio streams)
+            if (cachedICYMetadata && cachedICYMetadata.title) {
+                elements.trackTitle.textContent = cachedICYMetadata.title;
+                elements.trackArtist.textContent = cachedICYMetadata.artist || '';
+                elements.trackAlbum.textContent = '';
+            } else if (!media.artist && !media.album_name && status.status_text) {
+                // Parse status_text which may contain "Casting: Station Name - Artist - Song"
+                const statusText = status.status_text.replace(/^Casting:\s*/i, '');
+                elements.trackTitle.textContent = statusText || media.title || 'Unknown Title';
+                elements.trackArtist.textContent = '';
+                elements.trackAlbum.textContent = '';
+            } else {
+                elements.trackTitle.textContent = media.title || 'Unknown Title';
+                elements.trackArtist.textContent = media.artist || '';
+                elements.trackAlbum.textContent = media.album_name || '';
+            }
 
             // Update album art
             if (media.images && media.images.length > 0) {
@@ -141,6 +156,26 @@ document.addEventListener('DOMContentLoaded', function() {
             elements.stopBtn.disabled = true;
             elements.prevBtn.disabled = true;
             elements.nextBtn.disabled = true;
+
+            // Clear ICY metadata polling and cache
+            if (icyMetadataInterval) {
+                clearInterval(icyMetadataInterval);
+                icyMetadataInterval = null;
+            }
+            cachedICYMetadata = null;
+        }
+
+        // If playing radio and no artist/album, try ICY metadata
+        if (media && media.state === 'PLAYING' && !media.artist && !media.album_name) {
+            loadICYMetadata();
+            // Set up polling for ICY metadata
+            if (!icyMetadataInterval) {
+                icyMetadataInterval = setInterval(loadICYMetadata, 10000); // Every 10 seconds
+            }
+        } else if (icyMetadataInterval) {
+            // Clear interval if not needed
+            clearInterval(icyMetadataInterval);
+            icyMetadataInterval = null;
         }
     }
 
@@ -273,10 +308,31 @@ document.addEventListener('DOMContentLoaded', function() {
         elements.errorMessage.style.display = 'none';
     }
 
+    async function loadICYMetadata() {
+        try {
+            const response = await fetch(`/api/device/${deviceUuid}/icy-metadata`);
+            const data = await response.json();
+
+            if (data.success && data.metadata) {
+                // Cache ICY metadata so updateUI() can use it
+                cachedICYMetadata = data.metadata;
+                // Immediately update display
+                elements.trackTitle.textContent = data.metadata.title || '';
+                elements.trackArtist.textContent = data.metadata.artist || '';
+                elements.trackAlbum.textContent = '';
+            }
+        } catch (error) {
+            console.error('Failed to load ICY metadata:', error);
+        }
+    }
+
     // Cleanup on page unload
     window.addEventListener('beforeunload', function() {
         if (statusInterval) {
             clearInterval(statusInterval);
+        }
+        if (icyMetadataInterval) {
+            clearInterval(icyMetadataInterval);
         }
     });
 });
