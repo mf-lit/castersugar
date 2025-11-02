@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}{{ device.name }} - Castersugar{% endblock %}
+
+{% block content %}
+<div class="device-detail-page">
+    <div class="back-link">
+        <a href="/devices">&larr; Back to Devices</a>
+    </div>
+
+    <div class="device-header-section">
+        <div class="device-icon-large">
+            {{ '🔊' if device.is_audio_device else '📺' }}
+        </div>
+        <div>
+            <h2>{{ device.name }}</h2>
+            <p class="device-model-text">{{ device.model_name }}</p>
+        </div>
+    </div>
+
+    <div id="error-message" class="error" style="display: none;"></div>
+
+    <div class="status-container">
+        <div id="loading-status" class="loading-status">
+            <p>Loading device status...</p>
+        </div>
+
+        <div id="device-status" style="display: none;">
+            <!-- Now Playing Section -->
+            <div class="now-playing-section">
+                <div id="album-art-container" class="album-art-container">
+                    <div id="album-art" class="album-art-placeholder">
+                        <span id="album-art-icon">🎵</span>
+                    </div>
+                </div>
+
+                <div class="now-playing-info">
+                    <div id="app-name" class="app-name">Idle</div>
+                    <div id="track-title" class="track-title">No media playing</div>
+                    <div id="track-artist" class="track-artist"></div>
+                    <div id="track-album" class="track-album"></div>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div id="progress-container" class="progress-container" style="display: none;">
+                <div class="time-display">
+                    <span id="current-time">0:00</span>
+                    <span id="duration">0:00</span>
+                </div>
+                <div class="progress-bar">
+                    <div id="progress-fill" class="progress-fill"></div>
+                </div>
+            </div>
+
+            <!-- Playback Controls -->
+            <div class="playback-controls">
+                <button id="prev-btn" class="control-btn" title="Previous">
+                    <span class="control-icon">⏮</span>
+                </button>
+                <button id="play-pause-btn" class="control-btn control-btn-main" title="Play/Pause">
+                    <span id="play-pause-icon" class="control-icon">▶</span>
+                </button>
+                <button id="stop-btn" class="control-btn" title="Stop">
+                    <span class="control-icon">⏹</span>
+                </button>
+                <button id="next-btn" class="control-btn" title="Next">
+                    <span class="control-icon">⏭</span>
+                </button>
+            </div>
+
+            <!-- Volume Controls -->
+            <div class="volume-controls">
+                <button id="mute-btn" class="volume-btn" title="Mute">
+                    <span id="mute-icon">🔊</span>
+                </button>
+                <input type="range" id="volume-slider" class="volume-slider" min="0" max="100" value="50">
+                <span id="volume-value" class="volume-value">50%</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Device Info -->
+    <div class="device-info-section">
+        <h3>Device Information</h3>
+        <div class="info-grid">
+            <div class="info-item">
+                <span class="info-label">Host:</span>
+                <span class="info-value">{{ device.host }}:{{ device.port }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Manufacturer:</span>
+                <span class="info-value">{{ device.manufacturer }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Type:</span>
+                <span class="info-value">{{ device.cast_type }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">UUID:</span>
+                <span class="info-value info-uuid">{{ device.uuid }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const deviceUuid = '{{ device.uuid }}';
+</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='device_detail.js') }}"></script>
+{% endblock %}

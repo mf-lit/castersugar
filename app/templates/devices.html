@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Devices - Castersugar{% endblock %}
+
+{% block content %}
+<div class="devices-page">
+    <div class="header">
+        <h2>Chromecast Devices</h2>
+        <button id="refresh-btn" class="btn btn-primary">Refresh Devices</button>
+    </div>
+
+    <div id="cache-info" class="cache-info"></div>
+
+    <div id="loading" class="loading" style="display: none;">
+        <p>Discovering devices...</p>
+    </div>
+
+    <div id="error" class="error" style="display: none;"></div>
+
+    <div id="devices-list" class="devices-grid">
+        <!-- Devices will be loaded here -->
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='devices.js') }}"></script>
+{% endblock %}
