@@ -8,7 +8,18 @@
       "Bash(xargs kill:*)",
       "Bash(uv run python:*)",
       "Bash(python3:*)",
-      "Bash(timeout 15 uv run:*)"
+      "Bash(timeout 15 uv run:*)",
+      "WebSearch",
+      "WebFetch(domain:simonprickett.dev)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:garfnet.org.uk)",
+      "WebFetch(domain:gist.github.com)",
+      "Bash(timeout 10 uv run:*)",
+      "Bash(timeout 5 uv run:*)",
+      "Bash(timeout 5 curl:*)",
+      "Bash(node --check:*)",
+      "Bash(convert:*)",
+      "Bash(identify:*)"
     ],
     "deny": [],
     "ask": []

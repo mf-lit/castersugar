@@ -10,7 +10,10 @@
     {% set active_page = active_page|default('') %}
     <nav class="navbar">
         <div class="container">
-            <h1 class="logo">Castersugar</h1>
+            <a href="/" class="logo">
+                <img src="{{ url_for('static', filename='castersugar.png') }}" alt="Castersugar" class="logo-image">
+                <span class="logo-text">Castersugar</span>
+            </a>
             <ul class="nav-links">
                 <li><a href="/" {% if active_page == 'home' %}class="active"{% endif %}>Home</a></li>
                 <li><a href="/devices" {% if active_page == 'devices' %}class="active"{% endif %}>Devices</a></li>

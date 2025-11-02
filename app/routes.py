@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, jsonify, request
 from app.chromecast_service import chromecast_service
 from app.dynamodb_service import dynamodb_service
 from app.icy_metadata_service import icy_metadata_service
+from app.bbc_metadata_service import bbc_metadata_service
 import uuid as uuid_lib
 
 bp = Blueprint('main', __name__)
@@ -100,6 +101,14 @@ def api_pause(identifier):
 def api_stop(identifier):
     """API endpoint to stop (supports UUID or name)."""
     uuid = resolve_device_identifier(identifier)
+
+    # Stop metadata monitoring if there's a stream playing
+    stream_url = dynamodb_service.get_device_stream(uuid)
+    if stream_url:
+        bbc_metadata_service.stop_monitoring(stream_url)
+        icy_metadata_service.stop_monitoring(stream_url)
+        dynamodb_service.clear_device_stream(uuid)
+
     return jsonify(chromecast_service.stop(uuid))
 
 
@@ -218,9 +227,14 @@ def api_radio_play():
             dynamodb_service.set_last_selected_device(device_identifier)
             # Track which stream is playing on this device (use UUID as key)
             dynamodb_service.set_device_stream(uuid, station_url)
-            # Start monitoring ICY metadata
-            print(f"[RADIO PLAY] Starting ICY metadata monitoring for: {station_url}")
-            icy_metadata_service.start_monitoring(station_url)
+
+            # Start monitoring metadata - use BBC service for BBC streams, ICY for others
+            if bbc_metadata_service.is_bbc_stream(station_url):
+                print(f"[RADIO PLAY] Starting BBC metadata monitoring for: {station_url}")
+                bbc_metadata_service.start_monitoring(station_url)
+            else:
+                print(f"[RADIO PLAY] Starting ICY metadata monitoring for: {station_url}")
+                icy_metadata_service.start_monitoring(station_url)
 
         return jsonify(result)
     except Exception as e:
@@ -239,6 +253,8 @@ def api_radio_stop():
         # Get the stream URL that was playing and stop monitoring it (use UUID as key)
         stream_url = dynamodb_service.get_device_stream(uuid)
         if stream_url:
+            # Stop monitoring on both services (safe to call even if not monitoring)
+            bbc_metadata_service.stop_monitoring(stream_url)
             icy_metadata_service.stop_monitoring(stream_url)
             dynamodb_service.clear_device_stream(uuid)
 
@@ -291,9 +307,14 @@ def api_icy_metadata(identifier):
         if not stream_url:
             return jsonify({'success': False, 'error': 'No stream playing on device'})
 
-        # Get cached metadata
-        metadata = icy_metadata_service.get_metadata(stream_url)
-        print(f"[ICY METADATA] Cached metadata: {metadata}")
+        # Get cached metadata - check BBC service first for BBC streams, then ICY
+        metadata = None
+        if bbc_metadata_service.is_bbc_stream(stream_url):
+            metadata = bbc_metadata_service.get_metadata(stream_url)
+            print(f"[BBC METADATA] Cached metadata: {metadata}")
+        else:
+            metadata = icy_metadata_service.get_metadata(stream_url)
+            print(f"[ICY METADATA] Cached metadata: {metadata}")
 
         if metadata:
             return jsonify({

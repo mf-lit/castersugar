@@ -97,6 +97,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Reset playing station state
         playingStation = null;
         updateNowPlaying();
+        updateControlButtons();
 
         // Wait a bit for device to be loaded (only on initial load)
         if (!elements.deviceSelect.value) {
@@ -126,6 +127,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             playingStation = station.id;
                             renderStations();
                             updateNowPlaying();
+                            updateControlButtons();
                         }
                     }
                     // Start ICY metadata polling regardless of whether we found the station
@@ -240,8 +242,17 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateControlButtons() {
         const deviceSelected = elements.deviceSelect.value !== '';
         const stationSelected = selectedStation !== null;
+        const isPlaying = playingStation !== null;
 
-        elements.playBtn.disabled = !(deviceSelected && stationSelected);
+        // If something is playing, show "Playing" and disable the play button
+        if (isPlaying) {
+            elements.playBtn.innerHTML = '<span>▶</span> Playing';
+            elements.playBtn.disabled = true;
+        } else {
+            elements.playBtn.innerHTML = '<span>▶</span> Play';
+            elements.playBtn.disabled = !(deviceSelected && stationSelected);
+        }
+
         elements.stopBtn.disabled = !deviceSelected;
     }
 
