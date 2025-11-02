@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  castersugar:
+    build: .
+    container_name: castersugar
+    ports:
+      - "5005:5005"
+    environment:
+      - PYTHONUNBUFFERED=1
+    network_mode: host
+    restart: unless-stopped
+    volumes:
+      # Uncomment to mount local code for development
+      # - ./app:/app/app
+      # - ./main.py:/app/main.py
+      - /tmp:/tmp

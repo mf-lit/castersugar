@@ -27,7 +27,10 @@ document.addEventListener('DOMContentLoaded', function() {
         volumeIcon: document.getElementById('volume-icon'),
         nowPlaying: document.getElementById('now-playing'),
         nowPlayingStation: document.getElementById('now-playing-station'),
-        nowPlayingTrackInfo: document.getElementById('now-playing-track-info')
+        nowPlayingTrackInfo: document.getElementById('now-playing-track-info'),
+        nowPlayingHistory: document.getElementById('now-playing-history'),
+        previousTrack1: document.getElementById('previous-track-1'),
+        previousTrack2: document.getElementById('previous-track-2')
     };
 
     // Initialize
@@ -597,9 +600,18 @@ document.addEventListener('DOMContentLoaded', function() {
             icyMetadataInterval = null;
         }
 
-        // Hide track info
+        // Hide track info and history
         if (elements.nowPlayingTrackInfo) {
             elements.nowPlayingTrackInfo.style.display = 'none';
+        }
+        if (elements.nowPlayingHistory) {
+            elements.nowPlayingHistory.style.display = 'none';
+        }
+        if (elements.previousTrack1) {
+            elements.previousTrack1.style.display = 'none';
+        }
+        if (elements.previousTrack2) {
+            elements.previousTrack2.style.display = 'none';
         }
     }
 
@@ -621,6 +633,46 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else if (title) {
                     elements.nowPlayingTrackInfo.textContent = title;
                     elements.nowPlayingTrackInfo.style.display = 'block';
+                }
+
+                // Display history (previous songs) if available
+                const history = data.metadata.history || [];
+                if (history.length > 0) {
+                    elements.nowPlayingHistory.style.display = 'block';
+
+                    // Display most recent previous song (index 0)
+                    if (history[0]) {
+                        const prev1Artist = history[0].artist || '';
+                        const prev1Title = history[0].title || '';
+                        if (prev1Artist && prev1Title) {
+                            elements.previousTrack1.textContent = `${prev1Artist} - ${prev1Title}`;
+                            elements.previousTrack1.style.display = 'block';
+                        } else if (prev1Title) {
+                            elements.previousTrack1.textContent = prev1Title;
+                            elements.previousTrack1.style.display = 'block';
+                        }
+                    } else {
+                        elements.previousTrack1.style.display = 'none';
+                    }
+
+                    // Display second previous song (index 1)
+                    if (history[1]) {
+                        const prev2Artist = history[1].artist || '';
+                        const prev2Title = history[1].title || '';
+                        if (prev2Artist && prev2Title) {
+                            elements.previousTrack2.textContent = `${prev2Artist} - ${prev2Title}`;
+                            elements.previousTrack2.style.display = 'block';
+                        } else if (prev2Title) {
+                            elements.previousTrack2.textContent = prev2Title;
+                            elements.previousTrack2.style.display = 'block';
+                        }
+                    } else {
+                        elements.previousTrack2.style.display = 'none';
+                    }
+                } else {
+                    elements.nowPlayingHistory.style.display = 'none';
+                    elements.previousTrack1.style.display = 'none';
+                    elements.previousTrack2.style.display = 'none';
                 }
             }
         } catch (error) {

@@ -53,19 +53,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         const lastDiscovery = new Date(cacheInfo.last_discovery);
-        const expiresAt = new Date(cacheInfo.expires_at);
-        const now = new Date();
-
-        const timeUntilExpiry = Math.floor((expiresAt - now) / 1000 / 60);
 
         cacheInfoEl.innerHTML = `
             <strong>Cache Status:</strong>
-            Last discovery: ${lastDiscovery.toLocaleTimeString()} |
-            ${cacheInfo.is_expired
-                ? '<span style="color: #e74c3c;">Cache expired</span>'
-                : `Cache expires in ${timeUntilExpiry} minutes`
-            } |
-            ${cacheInfo.device_count} device(s) in cache
+            Last discovery: ${lastDiscovery.toLocaleString()} |
+            ${cacheInfo.device_count} device(s) in cache |
+            <span style="color: #27ae60;">Cached indefinitely</span>
         `;
     }
 

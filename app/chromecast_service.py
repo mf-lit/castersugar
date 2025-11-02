@@ -1,5 +1,5 @@
 import pychromecast
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import List, Dict, Optional
 import threading
 import time
@@ -8,8 +8,7 @@ import time
 class ChromecastService:
     """Service for discovering and caching Chromecast devices."""
 
-    def __init__(self, cache_duration_minutes: int = 60):
-        self.cache_duration = timedelta(minutes=cache_duration_minutes)
+    def __init__(self):
         self._devices: List[Dict] = []
         self._last_discovery: Optional[datetime] = None
         self._lock = threading.Lock()
@@ -35,11 +34,8 @@ class ChromecastService:
         with self._lock:
             now = datetime.now()
 
-            # Check if we need to refresh the cache
-            if (not force_refresh and
-                self._last_discovery and
-                now - self._last_discovery < self.cache_duration and
-                self._devices):
+            # Return cached devices unless force_refresh is requested
+            if not force_refresh and self._devices:
                 return self._devices
 
             # Perform discovery
@@ -106,18 +102,12 @@ class ChromecastService:
                 return {
                     'cached': False,
                     'last_discovery': None,
-                    'expires_at': None,
                     'device_count': 0
                 }
-
-            expires_at = self._last_discovery + self.cache_duration
-            now = datetime.now()
 
             return {
                 'cached': True,
                 'last_discovery': self._last_discovery.isoformat(),
-                'expires_at': expires_at.isoformat(),
-                'is_expired': now >= expires_at,
                 'device_count': len(self._devices)
             }
 

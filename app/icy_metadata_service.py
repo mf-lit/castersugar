@@ -10,7 +10,7 @@ class ICYMetadataService:
     """Service for monitoring radio streams and extracting ICY metadata."""
 
     def __init__(self):
-        self.metadata_cache = {}  # {stream_url: {artist, title, timestamp}}
+        self.metadata_cache = {}  # {stream_url: {artist, title, timestamp, history}}
         self.active_streams = {}  # {stream_url: stop_event}
         self.lock = threading.Lock()
 
@@ -55,11 +55,42 @@ class ICYMetadataService:
                 metadata = self._fetch_icy_metadata(stream_url)
                 if metadata:
                     with self.lock:
+                        # Get existing cache for this stream
+                        existing = self.metadata_cache.get(stream_url)
+
+                        # Check if this is a new song
+                        is_new_song = True
+                        if existing:
+                            is_new_song = (
+                                existing.get('artist') != metadata.get('artist') or
+                                existing.get('title') != metadata.get('title')
+                            )
+
+                        # If it's a new song, add current to history
+                        history = []
+                        if is_new_song and existing:
+                            # Add the previous current song to history
+                            history_entry = {
+                                'artist': existing.get('artist'),
+                                'title': existing.get('title'),
+                                'timestamp': existing.get('timestamp')
+                            }
+                            # Get existing history and prepend new entry
+                            old_history = existing.get('history', [])
+                            history = [history_entry] + old_history[:1]  # Keep only last 2 songs in history
+                        elif existing:
+                            # Not a new song, keep existing history
+                            history = existing.get('history', [])
+
+                        # Update cache with new metadata and history
                         self.metadata_cache[stream_url] = {
                             **metadata,
-                            'timestamp': time.time()
+                            'timestamp': time.time(),
+                            'history': history
                         }
-                        print(f"ICY metadata updated for {stream_url}: {metadata.get('artist')} - {metadata.get('title')}")
+
+                        if is_new_song:
+                            print(f"ICY metadata updated for {stream_url}: {metadata.get('artist')} - {metadata.get('title')}")
             except Exception as e:
                 print(f"Error fetching ICY metadata for {stream_url}: {e}")
 

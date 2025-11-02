@@ -7,13 +7,14 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
+    {% set active_page = active_page|default('') %}
     <nav class="navbar">
         <div class="container">
             <h1 class="logo">Castersugar</h1>
             <ul class="nav-links">
-                <li><a href="/">Home</a></li>
-                <li><a href="/devices">Devices</a></li>
-                <li><a href="/radio">Radio</a></li>
+                <li><a href="/" {% if active_page == 'home' %}class="active"{% endif %}>Home</a></li>
+                <li><a href="/devices" {% if active_page == 'devices' %}class="active"{% endif %}>Devices</a></li>
+                <li><a href="/radio" {% if active_page == 'radio' %}class="active"{% endif %}>Radio</a></li>
             </ul>
         </div>
     </nav>

@@ -10,13 +10,13 @@ bp = Blueprint('main', __name__)
 @bp.route('/')
 def index():
     """Redirect to devices page."""
-    return render_template('index.html')
+    return render_template('index.html', active_page='home')
 
 
 @bp.route('/devices')
 def devices():
     """Display the devices page."""
-    return render_template('devices.html')
+    return render_template('devices.html', active_page='devices')
 
 
 @bp.route('/device/<identifier>')
@@ -32,7 +32,7 @@ def device_detail(identifier):
     if not device:
         return "Device not found", 404
 
-    return render_template('device_detail.html', device=device)
+    return render_template('device_detail.html', device=device, active_page='devices')
 
 
 @bp.route('/api/devices')
@@ -137,7 +137,7 @@ def api_mute(identifier):
 @bp.route('/radio')
 def radio():
     """Display the radio page."""
-    return render_template('radio.html')
+    return render_template('radio.html', active_page='radio')
 
 
 @bp.route('/api/radio/stations')
