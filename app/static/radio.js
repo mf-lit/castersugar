@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     let stations = [];
     let selectedStation = null;
+    let playingStation = null;
 
     const elements = {
         deviceSelect: document.getElementById('device-select'),
@@ -22,7 +23,9 @@ document.addEventListener('DOMContentLoaded', function() {
         cancelBtn: document.getElementById('cancel-btn'),
         errorMessage: document.getElementById('error-message'),
         volumeSlider: document.getElementById('volume-slider'),
-        volumeIcon: document.getElementById('volume-icon')
+        volumeIcon: document.getElementById('volume-icon'),
+        nowPlaying: document.getElementById('now-playing'),
+        nowPlayingStation: document.getElementById('now-playing-station')
     };
 
     // Initialize
@@ -111,7 +114,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         elements.stationsList.innerHTML = stations.map(station => `
-            <div class="station-card ${selectedStation === station.id ? 'selected' : ''}"
+            <div class="station-card ${selectedStation === station.id ? 'selected' : ''} ${playingStation === station.id ? 'playing' : ''}"
                  data-station-id="${station.id}">
                 <div class="station-icon">
                     ${station.icon_url
@@ -217,6 +220,9 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!result.success) {
                 showError(result.error || 'Failed to start playback');
             } else {
+                playingStation = selectedStation;
+                renderStations();
+                updateNowPlaying();
                 hideError();
             }
         } catch (error) {
@@ -245,6 +251,9 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!result.success) {
                 showError(result.error || 'Failed to stop playback');
             } else {
+                playingStation = null;
+                renderStations();
+                updateNowPlaying();
                 hideError();
             }
         } catch (error) {
@@ -406,6 +415,20 @@ document.addEventListener('DOMContentLoaded', function() {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    function updateNowPlaying() {
+        if (playingStation) {
+            const station = stations.find(s => s.id === playingStation);
+            if (station) {
+                elements.nowPlayingStation.textContent = station.name;
+                elements.nowPlaying.style.display = 'block';
+            } else {
+                elements.nowPlaying.style.display = 'none';
+            }
+        } else {
+            elements.nowPlaying.style.display = 'none';
+        }
     }
 
     async function updateVolumeSlider() {

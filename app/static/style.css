@@ -632,6 +632,29 @@ main {
     font-size: 1rem;
 }
 
+.now-playing {
+    margin-top: 1rem;
+    padding: 0.75rem 1rem;
+    background-color: #e8f8f5;
+    border-left: 4px solid #27ae60;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.now-playing-label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #27ae60;
+}
+
+.now-playing-station {
+    font-size: 0.95rem;
+    color: #2c3e50;
+    font-weight: 500;
+}
+
 .btn-play {
     background-color: #27ae60;
 }
@@ -694,6 +717,17 @@ main {
 .station-card.selected {
     border-color: #3498db;
     background-color: #ebf5fb;
+}
+
+.station-card.playing {
+    border-color: #27ae60;
+    background-color: #e8f8f5;
+    box-shadow: 0 0 0 3px rgba(39, 174, 96, 0.2);
+}
+
+.station-card.playing:hover {
+    border-color: #27ae60;
+    box-shadow: 0 0 0 3px rgba(39, 174, 96, 0.3), 0 4px 12px rgba(0,0,0,0.1);
 }
 
 .station-icon {
