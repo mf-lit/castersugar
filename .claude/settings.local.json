@@ -19,7 +19,10 @@
       "Bash(timeout 5 curl:*)",
       "Bash(node --check:*)",
       "Bash(convert:*)",
-      "Bash(identify:*)"
+      "Bash(identify:*)",
+      "Bash(cat:*)",
+      "Bash(awk:*)",
+      "Bash(tee:*)"
     ],
     "deny": [],
     "ask": []

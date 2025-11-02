@@ -217,6 +217,13 @@ def api_radio_play():
         uuid = resolve_device_identifier(device_identifier)
         print(f"[RADIO PLAY] Resolved UUID: {uuid}")
 
+        # Stop monitoring old stream if device was playing something else
+        old_stream_url = dynamodb_service.get_device_stream(uuid)
+        if old_stream_url and old_stream_url != station_url:
+            print(f"[RADIO PLAY] Stopping monitoring for old stream: {old_stream_url}")
+            bbc_metadata_service.stop_monitoring(old_stream_url)
+            icy_metadata_service.stop_monitoring(old_stream_url)
+
         # Play the URL
         result = chromecast_service.play_url(uuid, station_url, title=station_name)
         print(f"[RADIO PLAY] Play result: {result}")

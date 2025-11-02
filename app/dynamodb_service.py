@@ -141,6 +141,27 @@ class DynamoDBService:
         except Exception as e:
             print(f"Error clearing device stream: {e}")
 
+    def get_all_device_streams(self) -> Dict[str, str]:
+        """Get all device streams as a dict mapping device_identifier -> stream_url."""
+        try:
+            response = self.state_table.scan()
+            items = response.get('Items', [])
+
+            # Filter for device_stream_* entries
+            device_streams = {}
+            for item in items:
+                key = item.get('key', '')
+                if key.startswith('device_stream_'):
+                    device_identifier = key.replace('device_stream_', '', 1)
+                    stream_url = item.get('value')
+                    if stream_url:
+                        device_streams[device_identifier] = stream_url
+
+            return device_streams
+        except Exception as e:
+            print(f"Error getting all device streams: {e}")
+            return {}
+
     # Station management
     def get_all_stations(self) -> List[Dict]:
         """Get all radio stations."""

@@ -12,6 +12,7 @@ class ICYMetadataService:
     def __init__(self):
         self.metadata_cache = {}  # {stream_url: {artist, title, timestamp, history}}
         self.active_streams = {}  # {stream_url: stop_event}
+        self.monitoring_start_times = {}  # {stream_url: start_timestamp}
         self.lock = threading.Lock()
 
     def start_monitoring(self, stream_url: str):
@@ -24,6 +25,9 @@ class ICYMetadataService:
             # Create stop event
             stop_event = threading.Event()
             self.active_streams[stream_url] = stop_event
+
+            # Record start time
+            self.monitoring_start_times[stream_url] = time.time()
 
             # Start background thread
             thread = threading.Thread(
@@ -41,12 +45,24 @@ class ICYMetadataService:
                 # Signal thread to stop
                 self.active_streams[stream_url].set()
                 del self.active_streams[stream_url]
+                # Clean up start time tracking
+                if stream_url in self.monitoring_start_times:
+                    del self.monitoring_start_times[stream_url]
                 print(f"Stopped ICY metadata monitoring for: {stream_url}")
 
     def get_metadata(self, stream_url: str) -> Optional[Dict]:
         """Get cached metadata for a stream."""
         with self.lock:
             return self.metadata_cache.get(stream_url)
+
+    def get_active_streams(self) -> Dict[str, float]:
+        """Get all active streams and their monitoring durations in seconds."""
+        with self.lock:
+            current_time = time.time()
+            return {
+                stream_url: current_time - start_time
+                for stream_url, start_time in self.monitoring_start_times.items()
+            }
 
     def _monitor_stream(self, stream_url: str, stop_event: threading.Event):
         """Background thread that monitors stream for metadata."""

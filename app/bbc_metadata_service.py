@@ -12,6 +12,7 @@ class BBCMetadataService:
     def __init__(self):
         self.metadata_cache = {}  # {stream_url: {artist, title, timestamp, history}}
         self.active_streams = {}  # {stream_url: stop_event}
+        self.monitoring_start_times = {}  # {stream_url: start_timestamp}
         self.lock = threading.Lock()
 
     def is_bbc_stream(self, stream_url: str) -> bool:
@@ -49,6 +50,9 @@ class BBCMetadataService:
             stop_event = threading.Event()
             self.active_streams[stream_url] = stop_event
 
+            # Record start time
+            self.monitoring_start_times[stream_url] = time.time()
+
             # Start background thread
             thread = threading.Thread(
                 target=self._monitor_stream,
@@ -65,12 +69,24 @@ class BBCMetadataService:
                 # Signal thread to stop
                 self.active_streams[stream_url].set()
                 del self.active_streams[stream_url]
+                # Clean up start time tracking
+                if stream_url in self.monitoring_start_times:
+                    del self.monitoring_start_times[stream_url]
                 print(f"Stopped BBC metadata monitoring for: {stream_url}")
 
     def get_metadata(self, stream_url: str) -> Optional[Dict]:
         """Get cached metadata for a stream."""
         with self.lock:
             return self.metadata_cache.get(stream_url)
+
+    def get_active_streams(self) -> Dict[str, float]:
+        """Get all active streams and their monitoring durations in seconds."""
+        with self.lock:
+            current_time = time.time()
+            return {
+                stream_url: current_time - start_time
+                for stream_url, start_time in self.monitoring_start_times.items()
+            }
 
     def _monitor_stream(self, stream_url: str, station_id: str, stop_event: threading.Event):
         """Background thread that monitors stream for metadata via BBC RMS API."""
