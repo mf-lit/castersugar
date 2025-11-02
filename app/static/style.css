@@ -639,6 +639,12 @@ main {
     border-left: 4px solid #27ae60;
     border-radius: 4px;
     display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.now-playing-station-info {
+    display: flex;
     align-items: center;
     gap: 0.5rem;
 }
@@ -653,6 +659,14 @@ main {
     font-size: 0.95rem;
     color: #2c3e50;
     font-weight: 500;
+}
+
+.now-playing-track-info {
+    padding-top: 0.5rem;
+    border-top: 1px solid rgba(39, 174, 96, 0.2);
+    font-size: 0.85rem;
+    font-weight: 400;
+    color: #2c3e50;
 }
 
 .btn-play {

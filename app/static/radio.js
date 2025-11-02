@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let stations = [];
     let selectedStation = null;
     let playingStation = null;
+    let icyMetadataInterval = null;
 
     const elements = {
         deviceSelect: document.getElementById('device-select'),
@@ -25,13 +26,15 @@ document.addEventListener('DOMContentLoaded', function() {
         volumeSlider: document.getElementById('volume-slider'),
         volumeIcon: document.getElementById('volume-icon'),
         nowPlaying: document.getElementById('now-playing'),
-        nowPlayingStation: document.getElementById('now-playing-station')
+        nowPlayingStation: document.getElementById('now-playing-station'),
+        nowPlayingTrackInfo: document.getElementById('now-playing-track-info')
     };
 
     // Initialize
     loadDevices();
     loadStations();
     loadLastDevice();
+    checkCurrentlyPlaying();
 
     // Event listeners
     elements.playBtn.addEventListener('click', playStation);
@@ -44,6 +47,7 @@ document.addEventListener('DOMContentLoaded', function() {
     elements.deviceSelect.addEventListener('change', () => {
         updateControlButtons();
         updateVolumeSlider();
+        checkCurrentlyPlaying();
     });
     elements.refreshIconBtn.addEventListener('click', refreshIconCache);
     elements.volumeSlider.addEventListener('input', handleVolumeChange);
@@ -80,6 +84,53 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             // Silently fail - not critical
             console.error('Failed to load last device:', error);
+        }
+    }
+
+    async function checkCurrentlyPlaying() {
+        // Stop any existing polling first
+        stopICYMetadataPolling();
+
+        // Reset playing station state
+        playingStation = null;
+        updateNowPlaying();
+
+        // Wait a bit for device to be loaded (only on initial load)
+        if (!elements.deviceSelect.value) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+        }
+
+        const device = elements.deviceSelect.value;
+        if (!device) return;
+
+        try {
+            // Check if device has a stream playing
+            const response = await fetch(`/api/device/${device}/icy-metadata`);
+            const data = await response.json();
+
+            // If we got metadata or the device has a stream, start polling
+            if (data.success || data.error === 'No metadata available yet') {
+                // Try to figure out which station is playing by checking device status
+                const statusResponse = await fetch(`/api/device/${device}/status`);
+                const status = await statusResponse.json();
+
+                if (status.media_status && status.media_status.state === 'PLAYING') {
+                    // Find station by matching the title in status
+                    const playingTitle = status.media_status.title;
+                    if (playingTitle) {
+                        const station = stations.find(s => s.name === playingTitle);
+                        if (station) {
+                            playingStation = station.id;
+                            renderStations();
+                            updateNowPlaying();
+                        }
+                    }
+                    // Start ICY metadata polling regardless of whether we found the station
+                    startICYMetadataPolling();
+                }
+            }
+        } catch (error) {
+            console.error('Failed to check currently playing:', error);
         }
     }
 
@@ -224,6 +275,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 renderStations();
                 updateNowPlaying();
                 hideError();
+                // Start polling ICY metadata
+                startICYMetadataPolling();
             }
         } catch (error) {
             showError(`Failed to start playback: ${error.message}`);
@@ -255,6 +308,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 renderStations();
                 updateNowPlaying();
                 hideError();
+                // Stop polling ICY metadata
+                stopICYMetadataPolling();
             }
         } catch (error) {
             showError(`Failed to stop playback: ${error.message}`);
@@ -521,6 +576,55 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } catch (error) {
             showError(`Failed to toggle mute: ${error.message}`);
+        }
+    }
+
+    // ICY metadata functions
+    function startICYMetadataPolling() {
+        // Clear any existing interval
+        stopICYMetadataPolling();
+
+        // Load immediately
+        loadICYMetadata();
+
+        // Poll every 10 seconds
+        icyMetadataInterval = setInterval(loadICYMetadata, 10000);
+    }
+
+    function stopICYMetadataPolling() {
+        if (icyMetadataInterval) {
+            clearInterval(icyMetadataInterval);
+            icyMetadataInterval = null;
+        }
+
+        // Hide track info
+        if (elements.nowPlayingTrackInfo) {
+            elements.nowPlayingTrackInfo.style.display = 'none';
+        }
+    }
+
+    async function loadICYMetadata() {
+        const device = elements.deviceSelect.value;
+        if (!device || !playingStation) return;
+
+        try {
+            const response = await fetch(`/api/device/${device}/icy-metadata`);
+            const data = await response.json();
+
+            if (data.success && data.metadata) {
+                // Show and update track info as plain text
+                const artist = data.metadata.artist || '';
+                const title = data.metadata.title || '';
+                if (artist && title) {
+                    elements.nowPlayingTrackInfo.textContent = `${artist} - ${title}`;
+                    elements.nowPlayingTrackInfo.style.display = 'block';
+                } else if (title) {
+                    elements.nowPlayingTrackInfo.textContent = title;
+                    elements.nowPlayingTrackInfo.style.display = 'block';
+                }
+            }
+        } catch (error) {
+            console.error('Failed to load ICY metadata:', error);
         }
     }
 });
